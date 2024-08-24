@@ -11,7 +11,7 @@ interface FormData {
   email: string;
 }
 
-// Function to transform first letter to uppercase
+// Function to transform the first letter to uppercase
 const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
@@ -24,7 +24,8 @@ const userSchema = yup.object({
     .test(
       "is-uppercase",
       "First letter must be uppercase",
-      (value) => (value ? value.charAt(0) === value.charAt(0).toUpperCase() : false)
+      (value) =>
+        value ? value.charAt(0) === value.charAt(0).toUpperCase() : false
     )
     .min(3, "Must be minimum 3 characters")
     .max(20, "Must be maximum 20 characters"),
@@ -34,7 +35,8 @@ const userSchema = yup.object({
     .test(
       "is-uppercase",
       "First letter must be uppercase",
-      (value) => (value ? value.charAt(0) === value.charAt(0).toUpperCase() : false)
+      (value) =>
+        value ? value.charAt(0) === value.charAt(0).toUpperCase() : false
     )
     .min(3, "Must be minimum 3 characters")
     .max(20, "Must be maximum 20 characters"),
@@ -56,19 +58,18 @@ const saveData = (newData: FormData): Promise<FormData> => {
 
 export default function Form() {
   const [submittedDataList, setSubmittedDataList] = useState<FormData[]>([]);
-  const [inputsDisabled, setInputsDisabled] = useState(false); // State to manage input disable
   const [clickCount, setClickCount] = useState(0); // State to manage button click count
 
   // Initialize form
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors, isSubmitting },
     control,
     reset,
   } = useForm<FormData>({
     resolver: yupResolver(userSchema),
-    mode: "onChange", // Enable validation on change (typing)
+    mode: "onChange", // Validate on change (while typing)
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -86,37 +87,20 @@ export default function Form() {
     onSuccess: (data) => {
       setSubmittedDataList((prevData) => [...prevData, data]);
       reset(); // Reset the form after successful submission
-      setInputsDisabled(false); // Re-enable inputs
     },
     onError: (error: any) => {
       console.error("Error submitting data:", error);
-      setInputsDisabled(false); // Re-enable inputs on error
     },
   });
 
   // On form submission, call the mutation
   const onSubmit = (data: FormData) => {
-    if (!isValid) {
-      console.log("Form has errors, cannot submit.");
-      return; // Prevent submission if there are errors
-    }
-
     // Capitalize the first letter of each input before submitting
     data.firstName = capitalizeFirstLetter(data.firstName);
     data.lastName = capitalizeFirstLetter(data.lastName);
     data.email = capitalizeFirstLetter(data.email);
 
-    setInputsDisabled(true); // Disable inputs when submission starts
     mutation(data);
-  };
-
-  // Handle button click
-  const handleButtonClick = () => {
-    setClickCount((prevCount) => {
-      const newCount = prevCount + 1;
-      console.log(`Button clicked ${newCount} times`);
-      return newCount;
-    });
   };
 
   return (
@@ -125,8 +109,12 @@ export default function Form() {
       <form
         onSubmit={(e) => {
           e.preventDefault(); // Prevent default form submission
-          handleButtonClick(); // Handle button click
-          handleSubmit(onSubmit)(); // Call handleSubmit
+          setClickCount((prevCount) => {
+            const newCount = prevCount + 1;
+            console.log(`Button clicked ${newCount} times`);
+            return newCount;
+          });
+          handleSubmit(onSubmit)(); // Handle form submission
         }}
         className="bg-white p-6 rounded-lg shadow-md space-y-4 w-full max-w-md"
       >
@@ -143,7 +131,7 @@ export default function Form() {
                   {...field}
                   type="text"
                   className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                  disabled={inputsDisabled} // Use inputsDisabled state
+                  disabled={isSubmitting} // Use isSubmitting state
                 />
                 {errors.firstName && (
                   <p className="text-red-500 text-sm mt-1">
@@ -168,7 +156,7 @@ export default function Form() {
                   {...field}
                   type="text"
                   className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                  disabled={inputsDisabled} // Use inputsDisabled state
+                  disabled={isSubmitting} 
                 />
                 {errors.lastName && (
                   <p className="text-red-500 text-sm mt-1">
@@ -193,7 +181,7 @@ export default function Form() {
                   {...field}
                   type="email"
                   className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                  disabled={inputsDisabled} // Use inputsDisabled state
+                  disabled={isSubmitting} 
                 />
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">
@@ -208,7 +196,7 @@ export default function Form() {
         <button
           type="submit"
           className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-          disabled={isPending || !isValid} // Disable button while pending or if form is invalid
+          disabled={isPending || isSubmitting} 
         >
           {isPending ? "Submitting..." : "Submit"}
         </button>
