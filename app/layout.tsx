@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/providers/queryProvider";
 import RecoilContextProvider from "@/providers/recoilProvider";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -21,6 +22,7 @@ export default function RootLayout({
       <body >
         <QueryProvider>
           <RecoilContextProvider>
+            <ReactQueryDevtools initialIsOpen={false} />
           {children}
           </RecoilContextProvider>
         </QueryProvider>

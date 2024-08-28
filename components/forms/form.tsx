@@ -4,6 +4,8 @@ import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useMutation } from "@tanstack/react-query";
+import { TBlogResponse, TCreateBlog } from "@/services/blog/blog.type";
+import { Blog } from "@/services/blog";
 
 interface FormData {
   firstName: string;
@@ -15,6 +17,11 @@ interface FormData {
 const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
+
+const BlogSchema = yup.object({
+  userId: yup.number().required(),
+  title: yup.string()
+})
 
 // Define schema
 const userSchema = yup.object({
@@ -67,13 +74,12 @@ export default function Form() {
     formState: { errors, isSubmitting },
     control,
     reset,
-  } = useForm<FormData>({
-    resolver: yupResolver(userSchema),
-    mode: "onChange", // Validate on change (while typing)
+  } = useForm({
+    resolver: yupResolver(BlogSchema),
+    mode: "all", // Validate on change (while typing)
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
+      userId: 0,
+      title:"",
     },
   });
 
@@ -84,6 +90,7 @@ export default function Form() {
     error,
   } = useMutation({
     mutationFn: (data: FormData) => saveData(data),
+    mutationKey: ["login"],
     onSuccess: (data) => {
       setSubmittedDataList((prevData) => [...prevData, data]);
       reset(); // Reset the form after successful submission
@@ -92,6 +99,21 @@ export default function Form() {
       console.error("Error submitting data:", error);
     },
   });
+
+  const createBlog = useMutation<TBlogResponse, Error, TCreateBlog>({
+    mutationKey: ["Create-Blog"],
+    mutationFn: (variable) => Blog.createBlog(variable),
+    onSuccess: (res) => {
+      res.title
+    },
+    onError: (err : any) => {
+      console.log(err?.response?.data?.id)
+    }
+  })
+
+  const onSubmitCreateBlog = async ( data : any) => {
+    await createBlog.mutateAsync(data)
+  }
 
   // On form submission, call the mutation
   const onSubmit = (data: FormData) => {
@@ -107,35 +129,28 @@ export default function Form() {
     <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100">
       <h1 className="font-semibold m-4 text-2xl">FORM</h1>
       <form
-        onSubmit={(e) => {
-          e.preventDefault(); // Prevent default form submission
-          setClickCount((prevCount) => {
-            const newCount = prevCount + 1;
-            console.log(`Button clicked ${newCount} times`);
-            return newCount;
-          });
-          handleSubmit(onSubmit)(); // Handle form submission
-        }}
+        onSubmit={handleSubmit(onSubmitCreateBlog)} // Handle form submission
+      
         className="bg-white p-6 rounded-lg shadow-md space-y-4 w-full max-w-md"
       >
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            First Name
+            userId
           </label>
           <Controller
-            name="firstName"
+            name="userId"
             control={control}
             render={({ field }) => (
               <div>
                 <input
                   {...field}
-                  type="text"
+                  type="number"
                   className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   disabled={isSubmitting} // Use isSubmitting state
                 />
-                {errors.firstName && (
+                {errors.userId && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.firstName.message}
+                    {errors.userId.message}
                   </p>
                 )}
               </div>
@@ -145,10 +160,10 @@ export default function Form() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Last Name
+            tittle
           </label>
           <Controller
-            name="lastName"
+            name="title"
             control={control}
             render={({ field }) => (
               <div>
@@ -158,9 +173,9 @@ export default function Form() {
                   className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
                   disabled={isSubmitting} 
                 />
-                {errors.lastName && (
+                {errors.title && (
                   <p className="text-red-500 text-sm mt-1">
-                    {errors.lastName.message}
+                    {errors.title.message}
                   </p>
                 )}
               </div>
@@ -168,30 +183,7 @@ export default function Form() {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <Controller
-            name="email"
-            control={control}
-            render={({ field }) => (
-              <div>
-                <input
-                  {...field}
-                  type="email"
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                  disabled={isSubmitting} 
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.email.message}
-                  </p>
-                )}
-              </div>
-            )}
-          />
-        </div>
+        
 
         <button
           type="submit"
